@@ -279,3 +279,66 @@ version number change once moved into the status.
 [ietf]: https://ietf.org/
 [semantic versioning]: https://semver.org/
 [SEP Versioning]: #sep-versioning
+rustc --version
+rustup target add wasm32v1-none
+winget install --id Stellar.StellarCLI --version 23.4.1
+New-Item -ItemType Directory -Path $(Split-Path $PROFILE) -Force
+if (-Not (Test-Path $PROFILE)) { New-Item -ItemType File -Path $PROFILE | Out-Null }
+Add-Content $PROFILE 'Set-PSReadlineKeyHandler -Key Tab -Function MenuComplete'
+Add-Content $PROFILE 'stellar completion --shell powershell | Out-String | Invoke-Expression'
+stellar contract init soroban-hello-world
+.
+├── Cargo.lock
+├── Cargo.toml
+├── README.md
+└── contracts
+    ├── hello_world
+    │   ├── Cargo.toml
+    │   ├── Makefile
+    │   ├── src
+    │   │   ├── lib.rs
+    │   │   └── test.rs
+    [workspace]
+resolver = "2"
+members = [
+  "contracts/*",
+]
+
+[workspace.dependencies]
+soroban-sdk = "22"
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+[dependencies]
+soroban-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+use soroban_sdk::{contract, contractimpl, vec, Env, String, Vec};
+#![cfg(test)]
+
+use super::*;
+use soroban_sdk::{vec, Env, String};
+
+#[test]
+fn test() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let words = client.hello(&String::from_str(&env, "Dev"));
+    assert_eq!(
+        words,
+        vec![
+            &env,
+            String::from_str(&env, "Hello"),
+            String::from_str(&env, "Dev"),
+        ]
+    );
+}
